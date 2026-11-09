@@ -275,33 +275,6 @@ async def quarterly_reports(
     if market_code in IN_MARKETS:
         return {"items": []}
 
-    # US stub with SEC links. TODO: replace with direct SEC filings API ingestion.
-    quarter_ends = _last_quarter_ends(limit)
-    items: list[dict[str, Any]] = []
-    for period in quarter_ends:
-        report_type = "10-K" if period.month == 12 else "10-Q"
-        published = period.replace(day=min(period.day, 28))
-        published_day = published if report_type == "10-Q" else date(period.year + 1, 2, 28)
-        period_iso = _iso_day(period)
-        published_iso = _iso_day(published_day)
-        sec_query = f"{ticker} {report_type}"
-        sec_search_url = f"https://www.sec.gov/edgar/search/#/q={sec_query.replace(' ', '%20')}"
-        items.append(
-            {
-                "id": _stable_id(market_code, ticker, period_iso, report_type),
-                "symbol": ticker,
-                "market": market_code,
-                "periodEndDate": period_iso,
-                "publishedAt": published_iso,
-                "reportType": report_type,
-                "title": f"{ticker} {report_type} filing",
-                "links": [
-                    {"label": "PDF", "url": sec_search_url},
-                    {"label": "SOURCE", "url": sec_search_url},
-                ],
-                "source": "SEC",
-            }
-        )
-
-    items.sort(key=lambda item: item["publishedAt"], reverse=True)
-    return {"items": items[:limit]}
+    # No SEC provider is linked yet. Calendar quarters and EDGAR search links
+    # are not evidence of a filing or its publication date.
+    return {"items": [], "status": "unavailable", "reason": "sec_provider_not_configured"}
